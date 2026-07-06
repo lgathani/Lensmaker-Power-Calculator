@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lensmaker Power Calculator</title>
+<style>
+  :root{
+    --bg: #0b1620;
+    --panel: #101f2c;
+    --panel-2: #0e1a24;
+    --line: #1e3444;
+    --text: #dce8ef;
+    --text-dim: #7f9aab;
+    --accent: #4fd6c4;
+    --accent-2: #ffb454;
+    --danger: #ff6b6b;
+    --mono: 'SF Mono', 'Roboto Mono', 'Consolas', monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:32px 20px;
+    background: radial-gradient(1200px 600px at 50% -10%, #12283a 0%, var(--bg) 60%);
+    color:var(--text);
+    font-family:var(--sans);
+    display:flex; justify-content:center;
+  }
+  .wrap{width:100%; max-width:860px;}
+  .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:.18em;
+    color:var(--accent); text-transform:uppercase; margin-bottom:6px;
+  }
+  h1{
+    margin:0 0 4px; font-size:26px; font-weight:600; letter-spacing:-.01em;
+  }
+  .sub{color:var(--text-dim); font-size:13.5px; margin-bottom:28px; line-height:1.5;}
+  .grid{
+    display:grid; grid-template-columns: 1.1fr 1fr; gap:20px;
+  }
+  @media(max-width:680px){ .grid{grid-template-columns:1fr;} }
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:22px;
+  }
+  .card h2{
+    font-size:12px; text-transform:uppercase; letter-spacing:.12em;
+    color:var(--text-dim); margin:0 0 18px; font-weight:600;
+  }
+  .field{ margin-bottom:16px; }
+  .field:last-child{margin-bottom:0;}
+  label{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:13px; color:var(--text-dim); margin-bottom:6px;
+  }
+  label .sym{ color:var(--accent); font-family:var(--mono); font-size:13px; }
+  input[type=number]{
+    width:100%; background:var(--panel-2); border:1px solid var(--line);
+    color:var(--text); border-radius:7px; padding:10px 12px;
+    font-family:var(--mono); font-size:15px; outline:none;
+    transition:border-color .15s;
+  }
+  input[type=number]:focus{ border-color:var(--accent); }
+  .hint{ font-size:11px; color:var(--text-dim); margin-top:5px; line-height:1.4; }
+  .toggle-row{
+    display:flex; align-items:center; gap:8px; margin-top:20px;
+    font-size:12.5px; color:var(--text-dim); cursor:pointer; user-select:none;
+  }
+  .toggle-row input{ accent-color:var(--accent); }
+  .adv{ margin-top:16px; padding-top:16px; border-top:1px dashed var(--line); display:none; }
+  .adv.show{ display:block; }
+
+  .results{ display:flex; flex-direction:column; gap:14px; }
+  .headline{
+    background:linear-gradient(135deg, #123b3a, #0e2530);
+    border:1px solid #1c4a44; border-radius:10px; padding:22px;
+    text-align:center;
+  }
+  .headline .label{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); margin-bottom:8px;}
+  .headline .value{ font-family:var(--mono); font-size:40px; font-weight:600; color:#eafff9; line-height:1; }
+  .headline .value .unit{ font-size:18px; color:var(--accent); margin-left:6px; }
+  .headline .efl{ margin-top:10px; font-size:12.5px; color:var(--text-dim); font-family:var(--mono); }
+
+  .breakdown{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .stat{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:12px 14px;
+  }
+  .stat .k{ font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px; }
+  .stat .v{ font-family:var(--mono); font-size:17px; color:var(--text); }
+
+  .warn{
+    font-size:12px; color:var(--accent-2); background:#2a2013; border:1px solid #4a3a1c;
+    border-radius:7px; padding:10px 12px; line-height:1.5; display:none;
+  }
+  .warn.show{ display:block; }
+  .err{
+    font-size:12px; color:var(--danger); background:#2a1414; border:1px solid #4a1c1c;
+    border-radius:7px; padding:10px 12px; line-height:1.5; display:none;
+  }
+  .err.show{ display:block; }
+
+  .formula-note{
+    margin-top:22px; font-size:11.5px; color:var(--text-dim); line-height:1.6;
+    border-top:1px solid var(--line); padding-top:16px; font-family:var(--mono);
+  }
+  .formula-note b{ color:var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Geometric Optics</div>
+  <h1>Lensmaker Power Calculator</h1>
+  <div class="sub">Thick-lens power from surface radii, center thickness, and refractive index. Sign convention: R is positive when its center of curvature lies to the right of the surface (light travels left → right).</div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Inputs</h2>
+
+      <div class="field">
+        <label><span>Front surface radius</span><span class="sym">R1</span></label>
+        <input type="number" id="r1" value="8.0" step="0.01">
+        <div class="hint">mm. Convex-front (bulging toward incoming light) is positive.</div>
+      </div>
+
+      <div class="field">
+        <label><span>Back surface radius</span><span class="sym">R2</span></label>
+        <input type="number" id="r2" value="-8.0" step="0.01">
+        <div class="hint">mm. Convex-back (bulging away from incoming light) is negative.</div>
+      </div>
+
+      <div class="field">
+        <label><span>Center thickness</span><span class="sym">t</span></label>
+        <input type="number" id="t" value="0.6" step="0.01" min="0">
+        <div class="hint">mm, along the optical axis.</div>
+      </div>
+
+      <div class="field">
+        <label><span>Lens refractive index</span><span class="sym">n</span></label>
+        <input type="number" id="n" value="1.459" step="0.001">
+        <div class="hint">e.g. ~1.459 for a typical hydrophobic acrylic IOL.</div>
+      </div>
+
+      <div class="toggle-row" id="advToggle">
+        <input type="checkbox" id="advCheck">
+        <span>Surrounding medium is not air (e.g. aqueous / vitreous)</span>
+      </div>
+      <div class="adv" id="advBlock">
+        <div class="field">
+          <label><span>Medium index, front side</span><span class="sym">n0</span></label>
+          <input type="number" id="n0" value="1.336" step="0.001">
+        </div>
+        <div class="field">
+          <label><span>Medium index, back side</span><span class="sym">n2</span></label>
+          <input type="number" id="n2" value="1.336" step="0.001">
+        </div>
+      </div>
+
+      <div class="err" id="errBox"></div>
+      <div class="warn" id="warnBox"></div>
+    </div>
+
+    <div class="results">
+      <div class="headline">
+        <div class="label">Total Power</div>
+        <div class="value"><span id="totalPower">—</span><span class="unit">D</span></div>
+        <div class="efl">EFL <span id="efl">—</span> mm (from principal plane)</div>
+      </div>
+
+      <div class="breakdown">
+        <div class="stat">
+          <div class="k">Front surface power P1</div>
+          <div class="v" id="p1">—</div>
+        </div>
+        <div class="stat">
+          <div class="k">Back surface power P2</div>
+          <div class="v" id="p2">—</div>
+        </div>
+        <div class="stat">
+          <div class="k">Simple sum P1 + P2</div>
+          <div class="v" id="thinSum">—</div>
+        </div>
+        <div class="stat">
+          <div class="k">Thickness correction</div>
+          <div class="v" id="thickCorr">—</div>
+        </div>
+      </div>
+
+      <div class="formula-note">
+        P1 = (n − n0)/R1<br>
+        P2 = (n2 − n)/R2<br>
+        <b>P = P1 + P2 − (t/n)·P1·P2</b>&nbsp; (R, t in meters → P in diopters)
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const inputs = ['r1','r2','t','n','n0','n2'].map(id => $(id));
+
+$('advCheck').addEventListener('change', () => {
+  $('advBlock').classList.toggle('show', $('advCheck').checked);
+  calc();
+});
+
+function calc(){
+  const r1 = parseFloat($('r1').value);
+  const r2 = parseFloat($('r2').value);
+  const t  = parseFloat($('t').value);
+  const n  = parseFloat($('n').value);
+  const useAdv = $('advCheck').checked;
+  const n0 = useAdv ? parseFloat($('n0').value) : 1.0;
+  const n2 = useAdv ? parseFloat($('n2').value) : 1.0;
+
+  const errBox = $('errBox'), warnBox = $('warnBox');
+  errBox.classList.remove('show'); warnBox.classList.remove('show');
+
+  if ([r1,r2,t,n,n0,n2].some(v => isNaN(v))){
+    errBox.textContent = 'Fill in all fields with numeric values.';
+    errBox.classList.add('show');
+    setOutputs(null);
+    return;
+  }
+  if (r1 === 0 || r2 === 0){
+    errBox.textContent = 'R1 and R2 must be nonzero (a flat surface has infinite radius — use a very large number instead, e.g. 1e6).';
+    errBox.classList.add('show');
+    setOutputs(null);
+    return;
+  }
+  if (n <= 0 || n0 <= 0 || n2 <= 0){
+    errBox.textContent = 'Refractive indices must be positive.';
+    errBox.classList.add('show');
+    setOutputs(null);
+    return;
+  }
+  if (t < 0){
+    errBox.textContent = 'Thickness cannot be negative.';
+    errBox.classList.add('show');
+    setOutputs(null);
+    return;
+  }
+
+  // convert mm to meters
+  const R1 = r1/1000, R2 = r2/1000, T = t/1000;
+
+  const P1 = (n - n0)/R1;
+  const P2 = (n2 - n)/R2;
+  const thinSum = P1 + P2;
+  const corr = (T/n) * P1 * P2;
+  const P = thinSum - corr;
+
+  if (r1 > 0 && r2 > 0){
+    warnBox.textContent = 'Note: R1 > 0 and R2 > 0 describes a meniscus (both surfaces curving the same way), not a standard biconvex lens. For a symmetric biconvex shape, R2 should typically be negative.';
+    warnBox.classList.add('show');
+  }
+
+  setOutputs({P1, P2, thinSum, corr, P});
+}
+
+function fmt(v, d=3){ return v.toFixed(d); }
+
+function setOutputs(r){
+  if (!r){
+    ['totalPower','p1','p2','thinSum','thickCorr','efl'].forEach(id => $(id).textContent = '—');
+    return;
+  }
+  $('totalPower').textContent = fmt(r.P, 2);
+  $('p1').textContent = fmt(r.P1, 3) + ' D';
+  $('p2').textContent = fmt(r.P2, 3) + ' D';
+  $('thinSum').textContent = fmt(r.thinSum, 3) + ' D';
+  $('thickCorr').textContent = '− ' + fmt(r.corr, 3) + ' D';
+  $('efl').textContent = Math.abs(r.P) > 1e-9 ? fmt(1000/r.P, 2) : '∞';
+}
+
+inputs.forEach(el => el.addEventListener('input', calc));
+calc();
+</script>
+</body>
+</html>
